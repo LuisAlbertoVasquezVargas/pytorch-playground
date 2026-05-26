@@ -12,13 +12,13 @@ torch.manual_seed(0)
 def make_data(n):
     x = torch.rand(n, 2) * 4.0 - 2.0
 
-    labels = torch.zeros(n, dtype=torch.long)
+    y = torch.zeros(n, dtype=torch.long)
 
-    labels[x[:, 0] < 0.0] = 0
-    labels[(x[:, 0] >= 0.0) & (x[:, 1] >= 0.0)] = 1
-    labels[(x[:, 0] >= 0.0) & (x[:, 1] < 0.0)] = 2
+    y[x[:, 0] < 0.0] = 0
+    y[(x[:, 0] >= 0.0) & (x[:, 1] >= 0.0)] = 1
+    y[(x[:, 0] >= 0.0) & (x[:, 1] < 0.0)] = 2
 
-    return x, labels
+    return x, y
 
 
 n = 2000
@@ -53,7 +53,8 @@ end = time.perf_counter()
 
 with torch.no_grad():
     logits = model(x)
-    predicted = logits.argmax(dim=1)
+    probabilities = torch.softmax(logits, dim=1)
+    predicted = probabilities.argmax(dim=1)
 
     accuracy = (predicted == y).float().mean()
 
@@ -63,13 +64,14 @@ print(f"final loss = {loss.item():.12f}")
 print(f"accuracy = {accuracy.item() * 100:.2f}%")
 
 print()
-print("x        y        | real class | predicted")
-print("------------------------------------------")
+print("x        y        | real class | predicted | probabilities")
+print("----------------------------------------------------------")
 
 for i in range(10):
     print(
         f"{x[i, 0].item(): 8.4f} "
         f"{x[i, 1].item(): 8.4f} |"
         f"{y[i].item(): 11d} |"
-        f"{predicted[i].item(): 10d}"
+        f"{predicted[i].item(): 10d} | "
+        f"{probabilities[i].tolist()}"
     )
